@@ -99,6 +99,12 @@ if (paginationElements) {
         }
     );
 }
+// Инициализация фильтрации - добавил searchByCustomer
+const filterElements = sampleTable.filter?.elements || {};
+applyFiltering = initFiltering(filterElements, {
+    searchBySeller: indexes.sellers || [],
+    searchByCustomer: indexes.customers || []  // ← добавил
+});
 
 const appRoot = document.querySelector('#app');
 appRoot.appendChild(sampleTable.container);

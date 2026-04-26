@@ -6,9 +6,10 @@ export function initFiltering(elements, indexes) {
             const options = indexes[elementName];
             
             if (select && select.tagName === 'SELECT' && options && Array.isArray(options)) {
-                // Очищаем все опции кроме первой
+                // Очищаем все опции кроме первой пустой
                 select.innerHTML = '<option value="" selected>—</option>';
                 
+                // Добавляем новые опции
                 options.forEach(name => {
                     if (name) {
                         const option = document.createElement('option');
@@ -22,31 +23,33 @@ export function initFiltering(elements, indexes) {
     }
 
     return (data, state, action) => {
-        // Обрабатываем очистку поля
+        // Обрабатываем очистку конкретного поля фильтра
         if (action && action.name === 'clear') {
             const fieldName = action.dataset?.field;
             if (fieldName && elements[fieldName]) {
                 const field = elements[fieldName];
                 if (field) {
+                    // Очищаем значение поля
                     field.value = '';
                     // Создаем событие change для обновления состояния
                     const event = new Event('change', { bubbles: true });
                     field.dispatchEvent(event);
                 }
             }
+            // Возвращаем данные без изменений, change событие вызовет перерисовку
             return data;
         }
 
-        // Фильтруем данные
-        return data.filter(row => {
-            // Фильтр по дате
+        // Фильтруем данные по всем полям
+        const filteredData = data.filter(row => {
+            // Фильтр по дате (частичное совпадение)
             if (state.date && state.date !== '') {
                 if (!row.date.includes(state.date)) {
                     return false;
                 }
             }
             
-            // Фильтр по покупателю
+            // Фильтр по покупателю (частичное совпадение, регистронезависимо)
             if (state.customer && state.customer !== '') {
                 if (!row.customer.toLowerCase().includes(state.customer.toLowerCase())) {
                     return false;
@@ -60,7 +63,7 @@ export function initFiltering(elements, indexes) {
                 }
             }
             
-            // Фильтр по сумме "от"
+            // Фильтр по сумме "от" (totalFrom)
             if (state.totalFrom && state.totalFrom !== '') {
                 const rowTotal = parseFloat(row.total);
                 const fromValue = parseFloat(state.totalFrom);
@@ -69,7 +72,7 @@ export function initFiltering(elements, indexes) {
                 }
             }
             
-            // Фильтр по сумме "до"
+            // Фильтр по сумме "до" (totalTo)
             if (state.totalTo && state.totalTo !== '') {
                 const rowTotal = parseFloat(row.total);
                 const toValue = parseFloat(state.totalTo);
@@ -78,7 +81,10 @@ export function initFiltering(elements, indexes) {
                 }
             }
             
+            // Все фильтры пройдены
             return true;
         });
+        
+        return filteredData;
     };
 }
