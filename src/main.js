@@ -74,7 +74,7 @@ applySearching = initSearching('search');
 // Инициализация фильтрации
 const filterElements = sampleTable.filter?.elements || {};
 applyFiltering = initFiltering(filterElements, {
-    search: indexes.sellers || [],
+    searchBySeller: indexes.sellers || [],
     searchByCustomer: indexes.customers || []
 });
 
