@@ -1,44 +1,91 @@
 import {createComparison, defaultRules} from "../lib/compare.js";
 
-// @todo: #4.3 — настроить компаратор
 const compare = createComparison(defaultRules);
 
 export function initFiltering(elements, indexes) {
-    // @todo: #4.1 — заполнить выпадающие списки опциями
-    Object.keys(indexes).forEach((elementName) => {
-        if (elements[elementName]) {
-            // Очищаем существующие опции (кроме первой, если это placeholder)
-            const options = elements[elementName].querySelectorAll('option:not([value=""])');
-            options.forEach(opt => opt.remove());
+    // Заполняем выпадающие списки опциями
+    if (indexes && elements) {
+        Object.keys(indexes).forEach((elementName) => {
+            const select = elements[elementName];
+            const options = indexes[elementName];
             
-            // Добавляем новые опции из индекса
-            Object.values(indexes[elementName]).forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                elements[elementName].appendChild(option);
-            });
-        }
-    });
+            if (select && select.tagName === 'SELECT' && options && Array.isArray(options)) {
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                options.forEach(name => {
+                    if (name) {
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        select.appendChild(option);
+                    }
+                });
+            }
+        });
+    }
 
     return (data, state, action) => {
-        // @todo: #4.2 — обработать очистку поля
-        if (action && action.name === 'clear') {
+        // Обрабатываем очистку поля
+        if (action && action.name === 'clear' && elements) {
             const fieldName = action.dataset?.field;
             if (fieldName && elements[fieldName]) {
                 const field = elements[fieldName];
-                // Очищаем значение поля
-                if (field.tagName === 'SELECT' || field.tagName === 'INPUT') {
+                if (field) {
                     field.value = '';
+                    const event = new Event('change', { bubbles: true });
+                    field.dispatchEvent(event);
                 }
-                // Также очищаем значение в state (косвенно через форму)
-                // Форма сама обновится при сбросе, но мы можем вызвать событие
-                const event = new Event('change', { bubbles: true });
-                field.dispatchEvent(event);
             }
         }
 
-        // @todo: #4.5 — отфильтровать данные используя компаратор
-        return data.filter(row => compare(row, state));
-    }
+        return data.filter(row => {
+            // Используем поле total (не amount)
+            const rowTotal = typeof row.total === 'number' ? row.total : parseFloat(row.total);
+            
+            // Фильтр по дате
+            if (state.date && state.date !== '') {
+                if (!row.date.includes(state.date)) {
+                    return false;
+                }
+            }
+            
+            // Фильтр по покупателю
+            if (state.customer && state.customer !== '') {
+                if (!row.customer.toLowerCase().includes(state.customer.toLowerCase())) {
+                    return false;
+                }
+            }
+            
+            // Фильтр по продавцу (точное совпадение)
+            if (state.seller && state.seller !== '') {
+                if (row.seller !== state.seller) {
+                    return false;
+                }
+            }
+            
+            // Фильтр по сумме "от" (totalFrom)
+            if (state.totalFrom !== undefined && state.totalFrom !== null && state.totalFrom !== '') {
+                const fromValue = parseFloat(state.totalFrom);
+                if (!isNaN(fromValue)) {
+                    if (rowTotal < fromValue) {
+                        return false;
+                    }
+                }
+            }
+            
+            // Фильтр по сумме "до" (totalTo)
+            if (state.totalTo !== undefined && state.totalTo !== null && state.totalTo !== '') {
+                const toValue = parseFloat(state.totalTo);
+                if (!isNaN(toValue)) {
+                    if (rowTotal > toValue) {
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        });
+    };
 }
