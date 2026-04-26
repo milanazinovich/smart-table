@@ -1,24 +1,24 @@
-import './fonts/ys-display/fonts.css'
-import './style.css'
+import './fonts/ys-display/fonts.css';
+import './style.css';
 
 import {data as sourceData} from "./data/dataset_1.js";
-
 import {initData} from "./data.js";
 import {processFormData} from "./lib/utils.js";
-
 import {initTable} from "./components/table.js";
 import {initPagination} from "./components/pagination.js";
 import {initSorting} from "./components/sorting.js";
 import {initFiltering} from "./components/filtering.js";
 import {initSearching} from "./components/searching.js";
 
-const {data, ...indexes} = initData(sourceData);
+// Инициализация данных
+const {data, sellers, customers} = initData(sourceData);
 
 let applySearching = null;
 let applyFiltering = null;
 let applySorting = null;
 let applyPagination = null;
 
+// Сбор состояния из формы
 function collectState() {
     const state = processFormData(new FormData(sampleTable.container));
     
@@ -32,6 +32,7 @@ function collectState() {
     };
 }
 
+// Функция перерисовки таблицы
 function render(action) {
     let state = collectState();
     let result = [...data];
@@ -48,10 +49,11 @@ function render(action) {
     if (applyPagination) {
         result = applyPagination(result, state, action);
     }
-
+    
     sampleTable.render(result);
 }
 
+// Инициализация таблицы
 const sampleTable = initTable({
     tableTemplate: 'table',
     rowTemplate: 'row',
@@ -62,10 +64,10 @@ const sampleTable = initTable({
 // Инициализация поиска
 applySearching = initSearching('search');
 
-// Инициализация фильтрации
-const filterElements = sampleTable.filter?.elements || {};
-applyFiltering = initFiltering(filterElements, {
-    searchBySeller: indexes.sellers || []
+// Инициализация фильтрации - убрал лишнее объявление filterElements
+applyFiltering = initFiltering(sampleTable.filter?.elements || {}, {
+    searchBySeller: sellers,
+    searchByCustomer: customers
 });
 
 // Инициализация сортировки
@@ -99,14 +101,10 @@ if (paginationElements) {
         }
     );
 }
-// Инициализация фильтрации - добавил searchByCustomer
-const filterElements = sampleTable.filter?.elements || {};
-applyFiltering = initFiltering(filterElements, {
-    searchBySeller: indexes.sellers || [],
-    searchByCustomer: indexes.customers || []  // ← добавил
-});
 
+// Добавляем таблицу на страницу
 const appRoot = document.querySelector('#app');
 appRoot.appendChild(sampleTable.container);
 
+// Первоначальная отрисовка
 render();
