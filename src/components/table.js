@@ -44,27 +44,27 @@ export function initTable(settings, onAction) {
         onAction(e.submitter);
     });
 
-   const render = (data) => {
-    const nextRows = data.map(item => {
-        const row = cloneTemplate(rowTemplate);
-        
-        Object.keys(item).forEach(key => {
-            // Маппинг полей: total остается total (не amount)
-            let templateKey = key;
-            // Если нужно, можно добавить другие маппинги
+    const render = (data) => {
+        // @todo: #1.1 — преобразовать данные в массив строк на основе шаблона rowTemplate
+        const nextRows = data.map(item => {
+            const row = cloneTemplate(rowTemplate);
             
-            if (row.elements[templateKey]) {
-                const element = row.elements[templateKey];
-                if (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA') {
-                    element.value = item[key];
-                } else {
-                    element.textContent = item[key];
+            Object.keys(item).forEach(key => {
+                if (row.elements[key]) {
+                    const element = row.elements[key];
+                    if (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA') {
+                        element.value = item[key];
+                    } else {
+                        element.textContent = item[key];
+                    }
                 }
-            }
+            });
+            
+            return row.container;
         });
         
-        return row.container;
-    });
-    
-    root.elements.rows.replaceChildren(...nextRows);
+        root.elements.rows.replaceChildren(...nextRows);
+    };
+
+    return {...root, render};
 }
