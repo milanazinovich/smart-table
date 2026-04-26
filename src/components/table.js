@@ -44,33 +44,27 @@ export function initTable(settings, onAction) {
         onAction(e.submitter);
     });
 
-    const render = (data) => {
-        // @todo: #1.1 — преобразовать данные в массив строк на основе шаблона rowTemplate
-        const nextRows = data.map(item => {
-            const row = cloneTemplate(rowTemplate);
+   const render = (data) => {
+    const nextRows = data.map(item => {
+        const row = cloneTemplate(rowTemplate);
+        
+        Object.keys(item).forEach(key => {
+            // Маппинг полей: total остается total (не amount)
+            let templateKey = key;
+            // Если нужно, можно добавить другие маппинги
             
-            Object.keys(item).forEach(key => {
-                // Маппинг полей: amount -> total для соответствия HTML
-                let templateKey = key;
-                if (key === 'amount') {
-                    templateKey = 'total';
+            if (row.elements[templateKey]) {
+                const element = row.elements[templateKey];
+                if (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA') {
+                    element.value = item[key];
+                } else {
+                    element.textContent = item[key];
                 }
-                
-                if (row.elements[templateKey]) {
-                    const element = row.elements[templateKey];
-                    if (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA') {
-                        element.value = item[key];
-                    } else {
-                        element.textContent = item[key];
-                    }
-                }
-            });
-            
-            return row.container;
+            }
         });
         
-        root.elements.rows.replaceChildren(...nextRows);
-    }
-
-    return {...root, render};
+        return row.container;
+    });
+    
+    root.elements.rows.replaceChildren(...nextRows);
 }
