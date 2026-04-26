@@ -1,17 +1,23 @@
 import {getPages} from "../lib/utils.js";
 
 export const initPagination = ({pages, fromRow, toRow, totalRows}, createPage) => {
-    // @todo: #2.3 — подготовить шаблон кнопки для страницы и очистить контейнер
-    const pageTemplate = pages.firstElementChild.cloneNode(true);
-    pages.firstElementChild.remove();
+    // Подготавливаем шаблон кнопки для страницы и очищаем контейнер
+    let pageTemplate = null;
+    if (pages && pages.firstElementChild) {
+        pageTemplate = pages.firstElementChild.cloneNode(true);
+        pages.innerHTML = '';
+    }
 
     return (data, state, action) => {
-        // @todo: #2.1 — посчитать количество страниц, объявить переменные и константы
         const rowsPerPage = state.rowsPerPage;
-        const pageCount = Math.ceil(data.length / rowsPerPage);
+        const pageCount = Math.max(1, Math.ceil(data.length / rowsPerPage));
         let page = state.page;
+        
+        // Корректируем страницу, если она выходит за пределы
+        if (page > pageCount) page = pageCount;
+        if (page < 1) page = 1;
 
-        // @todo: #2.6 — обработать действия
+        // Обрабатываем действия
         if (action) {
             switch(action.name) {
                 case 'prev':
@@ -27,8 +33,7 @@ export const initPagination = ({pages, fromRow, toRow, totalRows}, createPage) =
                     page = pageCount;
                     break;
                 default:
-                    // Для radio кнопок страниц - номер страницы в value
-                    if (action.name === 'page' || action.value) {
+                    if (action.name === 'page' || action.type === 'radio') {
                         const newPage = parseInt(action.value);
                         if (!isNaN(newPage) && newPage >= 1 && newPage <= pageCount) {
                             page = newPage;
@@ -38,24 +43,26 @@ export const initPagination = ({pages, fromRow, toRow, totalRows}, createPage) =
             }
         }
 
-        // @todo: #2.4 — получить список видимых страниц и вывести их
-        const visiblePages = getPages(page, pageCount, 5);
-        pages.replaceChildren(...visiblePages.map(pageNumber => {
-            const el = pageTemplate.cloneNode(true);
-            return createPage(el, pageNumber, pageNumber === page);
-        }));
-
-        // @todo: #2.5 — обновить статус пагинации
-        if (data.length === 0) {
-            fromRow.textContent = 0;
-            toRow.textContent = 0;
-        } else {
-            fromRow.textContent = (page - 1) * rowsPerPage + 1;
-            toRow.textContent = Math.min(page * rowsPerPage, data.length);
+        // Выводим кнопки пагинации
+        if (pages && pageTemplate) {
+            const visiblePages = getPages(page, pageCount, 5);
+            pages.replaceChildren(...visiblePages.map(pageNumber => {
+                const el = pageTemplate.cloneNode(true);
+                return createPage(el, pageNumber, pageNumber === page);
+            }));
         }
-        totalRows.textContent = data.length;
 
-        // @todo: #2.2 — посчитать сколько строк нужно пропустить и получить срез данных
+        // Обновляем статус пагинации
+        if (fromRow && toRow && totalRows) {
+            const startRow = data.length === 0 ? 0 : (page - 1) * rowsPerPage + 1;
+            const endRow = Math.min(page * rowsPerPage, data.length);
+            
+            fromRow.textContent = startRow;
+            toRow.textContent = endRow;
+            totalRows.textContent = data.length;
+        }
+
+        // Возвращаем нужные строки для текущей страницы
         const skip = (page - 1) * rowsPerPage;
         return data.slice(skip, skip + rowsPerPage);
     }
