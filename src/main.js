@@ -12,7 +12,6 @@ import {initSorting} from "./components/sorting.js";
 import {initFiltering} from "./components/filtering.js";
 import {initSearching} from "./components/searching.js";
 
-// Исходные данные используемые в render()
 const {data, ...indexes} = initData(sourceData);
 
 let applySearching = null;
@@ -20,10 +19,6 @@ let applyFiltering = null;
 let applySorting = null;
 let applyPagination = null;
 
-/**
- * Сбор и обработка полей из таблицы
- * @returns {Object}
- */
 function collectState() {
     const state = processFormData(new FormData(sampleTable.container));
     
@@ -37,10 +32,6 @@ function collectState() {
     };
 }
 
-/**
- * Перерисовка состояния таблицы при любых изменениях
- * @param {HTMLButtonElement?} action
- */
 function render(action) {
     let state = collectState();
     let result = [...data];
@@ -74,23 +65,19 @@ applySearching = initSearching('search');
 // Инициализация фильтрации
 const filterElements = sampleTable.filter?.elements || {};
 applyFiltering = initFiltering(filterElements, {
-    searchBySeller: indexes.sellers || [],
-    searchByCustomer: indexes.customers || []
+    searchBySeller: indexes.sellers || []
 });
 
-// Инициализация сортировки - ИСПРАВЛЕНО
+// Инициализация сортировки
 const sortButtons = [];
 const headerElements = sampleTable.header?.elements;
 if (headerElements) {
-    // headerElements - это объект, ищем кнопки по ключам
-    const dateButton = headerElements.sortByDate;
-    const totalButton = headerElements.sortByTotal;
-    if (dateButton) sortButtons.push(dateButton);
-    if (totalButton) sortButtons.push(totalButton);
+    if (headerElements.sortByDate) sortButtons.push(headerElements.sortByDate);
+    if (headerElements.sortByTotal) sortButtons.push(headerElements.sortByTotal);
 }
 applySorting = initSorting(sortButtons);
 
-// Инициализация пагинации - ИСПРАВЛЕНО
+// Инициализация пагинации
 const paginationElements = sampleTable.pagination?.elements;
 if (paginationElements) {
     applyPagination = initPagination(
@@ -105,13 +92,9 @@ if (paginationElements) {
             const span = el.querySelector('span');
             if (input) {
                 input.value = page;
-                if (isCurrent) {
-                    input.checked = true;
-                }
+                if (isCurrent) input.checked = true;
             }
-            if (span) {
-                span.textContent = page;
-            }
+            if (span) span.textContent = page;
             return el;
         }
     );

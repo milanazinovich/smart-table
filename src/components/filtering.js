@@ -1,7 +1,3 @@
-import {createComparison, defaultRules} from "../lib/compare.js";
-
-const compare = createComparison(defaultRules);
-
 export function initFiltering(elements, indexes) {
     // Заполняем выпадающие списки опциями
     if (indexes && elements) {
@@ -10,9 +6,8 @@ export function initFiltering(elements, indexes) {
             const options = indexes[elementName];
             
             if (select && select.tagName === 'SELECT' && options && Array.isArray(options)) {
-                while (select.options.length > 1) {
-                    select.remove(1);
-                }
+                // Очищаем все опции кроме первой
+                select.innerHTML = '<option value="" selected>—</option>';
                 
                 options.forEach(name => {
                     if (name) {
@@ -28,22 +23,22 @@ export function initFiltering(elements, indexes) {
 
     return (data, state, action) => {
         // Обрабатываем очистку поля
-        if (action && action.name === 'clear' && elements) {
+        if (action && action.name === 'clear') {
             const fieldName = action.dataset?.field;
             if (fieldName && elements[fieldName]) {
                 const field = elements[fieldName];
                 if (field) {
                     field.value = '';
+                    // Создаем событие change для обновления состояния
                     const event = new Event('change', { bubbles: true });
                     field.dispatchEvent(event);
                 }
             }
+            return data;
         }
 
+        // Фильтруем данные
         return data.filter(row => {
-            // Используем поле total (не amount)
-            const rowTotal = typeof row.total === 'number' ? row.total : parseFloat(row.total);
-            
             // Фильтр по дате
             if (state.date && state.date !== '') {
                 if (!row.date.includes(state.date)) {
@@ -65,23 +60,21 @@ export function initFiltering(elements, indexes) {
                 }
             }
             
-            // Фильтр по сумме "от" (totalFrom)
-            if (state.totalFrom !== undefined && state.totalFrom !== null && state.totalFrom !== '') {
+            // Фильтр по сумме "от"
+            if (state.totalFrom && state.totalFrom !== '') {
+                const rowTotal = parseFloat(row.total);
                 const fromValue = parseFloat(state.totalFrom);
-                if (!isNaN(fromValue)) {
-                    if (rowTotal < fromValue) {
-                        return false;
-                    }
+                if (!isNaN(rowTotal) && !isNaN(fromValue) && rowTotal < fromValue) {
+                    return false;
                 }
             }
             
-            // Фильтр по сумме "до" (totalTo)
-            if (state.totalTo !== undefined && state.totalTo !== null && state.totalTo !== '') {
+            // Фильтр по сумме "до"
+            if (state.totalTo && state.totalTo !== '') {
+                const rowTotal = parseFloat(row.total);
                 const toValue = parseFloat(state.totalTo);
-                if (!isNaN(toValue)) {
-                    if (rowTotal > toValue) {
-                        return false;
-                    }
+                if (!isNaN(rowTotal) && !isNaN(toValue) && rowTotal > toValue) {
+                    return false;
                 }
             }
             
