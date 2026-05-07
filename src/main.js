@@ -10,15 +10,15 @@ import {initSorting} from "./components/sorting.js";
 import {initFiltering} from "./components/filtering.js";
 import {initSearching} from "./components/searching.js";
 
-// Инициализация данных
-const {data, sellers, customers} = initData(sourceData);
+const api = initData(sourceData);
 
 let applySearching = null;
 let applyFiltering = null;
 let applySorting = null;
 let applyPagination = null;
+let updatePagination = null;
+let updateIndexes = null;
 
-// Сбор состояния из формы
 function collectState() {
     const state = processFormData(new FormData(sampleTable.container));
     
@@ -32,28 +32,24 @@ function collectState() {
     };
 }
 
-// Функция перерисовки таблицы
-function render(action) {
-    let state = collectState();
-    let result = [...data];
+async function render(action) {
+    const state = collectState();
+    let query = {};
     
-    if (applySearching) {
-        result = applySearching(result, state, action);
-    }
-    if (applyFiltering) {
-        result = applyFiltering(result, state, action);
-    }
-    if (applySorting) {
-        result = applySorting(result, state, action);
-    }
-    if (applyPagination) {
-        result = applyPagination(result, state, action);
+    query = applySearching(query, state, action);
+    query = applyFiltering(query, state, action);
+    query = applySorting(query, state, action);
+    query = applyPagination(query, state, action);
+    
+    const { total, items } = await api.getRecords(query);
+    
+    if (updatePagination) {
+        updatePagination(total, query);
     }
     
-    sampleTable.render(result);
+    sampleTable.render(items);
 }
 
-// Инициализация таблицы
 const sampleTable = initTable({
     tableTemplate: 'table',
     rowTemplate: 'row',
@@ -61,16 +57,11 @@ const sampleTable = initTable({
     after: ['pagination']
 }, render);
 
-// Инициализация поиска
 applySearching = initSearching('search');
 
-// Инициализация фильтрации - убрал лишнее объявление filterElements
-applyFiltering = initFiltering(sampleTable.filter?.elements || {}, {
-    searchBySeller: sellers,
-    searchByCustomer: customers
-});
+const filterElements = sampleTable.filter?.elements || {};
+({applyFiltering, updateIndexes} = initFiltering(filterElements));
 
-// Инициализация сортировки
 const sortButtons = [];
 const headerElements = sampleTable.header?.elements;
 if (headerElements) {
@@ -79,10 +70,9 @@ if (headerElements) {
 }
 applySorting = initSorting(sortButtons);
 
-// Инициализация пагинации
 const paginationElements = sampleTable.pagination?.elements;
 if (paginationElements) {
-    applyPagination = initPagination(
+    ({applyPagination, updatePagination} = initPagination(
         {
             pages: paginationElements.pages,
             fromRow: paginationElements.fromRow,
@@ -99,12 +89,24 @@ if (paginationElements) {
             if (span) span.textContent = page;
             return el;
         }
-    );
+    ));
 }
 
-// Добавляем таблицу на страницу
+async function init() {
+    const indexes = await api.getIndexes();
+    
+    if (updateIndexes && filterElements) {
+        updateIndexes(filterElements, {
+            searchBySeller: indexes.sellers,
+            searchByCustomer: indexes.customers
+        });
+    }
+}
+
 const appRoot = document.querySelector('#app');
 appRoot.appendChild(sampleTable.container);
 
-// Первоначальная отрисовка
-render();
+init().then(render).catch(err => {
+    console.error('Failed to initialize app:', err);
+    sampleTable.render([]);
+});

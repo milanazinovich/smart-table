@@ -1,41 +1,41 @@
 import {getPages} from "../lib/utils.js";
 
 export const initPagination = ({pages, fromRow, toRow, totalRows}, createPage) => {
-    // Подготавливаем шаблон кнопки для страницы и очищаем контейнер
     let pageTemplate = null;
     if (pages && pages.firstElementChild) {
         pageTemplate = pages.firstElementChild.cloneNode(true);
         pages.innerHTML = '';
     }
 
-    return (data, state, action) => {
-        const rowsPerPage = state.rowsPerPage;
-        const pageCount = Math.max(1, Math.ceil(data.length / rowsPerPage));
+    let pageCount = 1;
+
+    const applyPagination = (query, state, action) => {
+        const limit = state.rowsPerPage;
         let page = state.page;
-        
-        // Корректируем страницу, если она выходит за пределы
-        if (page > pageCount) page = pageCount;
+
+        const currentPageCount = pageCount || 1;
+
+        if (page > currentPageCount) page = currentPageCount;
         if (page < 1) page = 1;
 
-        // Обрабатываем действия
         if (action) {
             switch(action.name) {
                 case 'prev':
                     page = Math.max(1, page - 1);
                     break;
                 case 'next':
-                    page = Math.min(pageCount, page + 1);
+                    page = Math.min(currentPageCount, page + 1);
                     break;
                 case 'first':
                     page = 1;
                     break;
                 case 'last':
-                    page = pageCount;
+                    page = currentPageCount;
                     break;
                 default:
                     if (action.name === 'page' || action.type === 'radio') {
                         const newPage = parseInt(action.value);
-                        if (!isNaN(newPage) && newPage >= 1 && newPage <= pageCount) {
+                        if (!isNaN(newPage) && newPage >= 1 && newPage <= currentPageCount) {
                             page = newPage;
                         }
                     }
@@ -43,7 +43,15 @@ export const initPagination = ({pages, fromRow, toRow, totalRows}, createPage) =
             }
         }
 
-        // Выводим кнопки пагинации
+        return Object.assign({}, query, {
+            limit,
+            page
+        });
+    };
+
+    const updatePagination = (total, { page, limit }) => {
+        pageCount = Math.max(1, Math.ceil(total / limit));
+
         if (pages && pageTemplate) {
             const visiblePages = getPages(page, pageCount, 5);
             pages.replaceChildren(...visiblePages.map(pageNumber => {
@@ -52,18 +60,18 @@ export const initPagination = ({pages, fromRow, toRow, totalRows}, createPage) =
             }));
         }
 
-        // Обновляем статус пагинации
         if (fromRow && toRow && totalRows) {
-            const startRow = data.length === 0 ? 0 : (page - 1) * rowsPerPage + 1;
-            const endRow = Math.min(page * rowsPerPage, data.length);
+            const startRow = total === 0 ? 0 : (page - 1) * limit + 1;
+            const endRow = Math.min(page * limit, total);
             
             fromRow.textContent = startRow;
             toRow.textContent = endRow;
-            totalRows.textContent = data.length;
+            totalRows.textContent = total;
         }
+    };
 
-        // Возвращаем нужные строки для текущей страницы
-        const skip = (page - 1) * rowsPerPage;
-        return data.slice(skip, skip + rowsPerPage);
-    }
-}
+    return {
+        applyPagination,
+        updatePagination
+    };
+};
