@@ -1,23 +1,14 @@
 export function initFiltering(elements) {
     const updateIndexes = (elements, indexes) => {
         Object.keys(indexes).forEach((elementName) => {
-            const select = elements[elementName];
-            const options = indexes[elementName];
-            
-            if (select && select.tagName === 'SELECT' && Array.isArray(options)) {
-                select.innerHTML = '<option value="" selected>—</option>';
-                
-                options.forEach(name => {
-                    if (name) {
-                        const option = document.createElement('option');
-                        option.value = name;
-                        option.textContent = name;
-                        select.appendChild(option);
-                    }
-                });
-            }
-        });
-    };
+            elements[elementName].append(...Object.values(indexes[elementName]).map(name => {
+                const el = document.createElement('option');
+                el.textContent = name;
+                el.value = name;
+                return el;
+            }))
+        })
+    }    
 
     const applyFiltering = (query, state, action) => {
         if (action && action.name === 'clear') {
