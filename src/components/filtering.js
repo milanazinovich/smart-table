@@ -1,14 +1,10 @@
 export function initFiltering(elements) {
     const updateIndexes = (elements, indexes) => {
-        if (!elements || !indexes) return;
-        
         Object.keys(indexes).forEach((elementName) => {
             const select = elements[elementName];
             const options = indexes[elementName];
             
             if (select && select.tagName === 'SELECT' && Array.isArray(options)) {
-                const currentValue = select.value;
-                
                 select.innerHTML = '<option value="" selected>—</option>';
                 
                 options.forEach(name => {
@@ -19,27 +15,17 @@ export function initFiltering(elements) {
                         select.appendChild(option);
                     }
                 });
-                
-                if (currentValue && options.includes(currentValue)) {
-                    select.value = currentValue;
-                }
             }
         });
     };
 
     const applyFiltering = (query, state, action) => {
         if (action && action.name === 'clear') {
-            const fieldName = action.dataset?.field;
-            if (fieldName && elements[fieldName]) {
-                const field = elements[fieldName];
-                if (field) {
-                    field.value = '';
-                    const event = new Event('change', { bubbles: true });
-                    field.dispatchEvent(event);
-                }
-            }
-            return query;
-        }
+      const fieldName = action.dataset?.field;
+      const input = action.parentElement.querySelector('input');
+      input.value = '';
+      state[fieldName] = '';
+    } 
 
         const filter = {};
         
